@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Puzzle 2.0 - Author Match</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; }
+        #game-container { max-width: 800px; text-align: center; margin-top: 20px; }
+        .stats { display: flex; gap: 20px; font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+        
+        #computer-card { 
+            width: 200px; height: 100px; background: #007bff; color: white; 
+            display: flex; align-items: center; justify-content: center; 
+            border-radius: 10px; font-size: 1.1rem; margin: 20px auto; padding: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        #player-grid { 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 20px; 
+        }
+
+        .card { 
+            width: 120px; height: 80px; background: #343a40; color: transparent; 
+            display: flex; align-items: center; justify-content: center; 
+            border-radius: 5px; cursor: pointer; transition: 0.3s; padding: 5px; text-align: center;
+        }
+
+        .card.open { background: #fff; color: #333; border: 2px solid #007bff; cursor: default; }
+        .card.matched { background: #28a745; color: white; border: none; visibility: hidden; }
+        
+        #message { margin-top: 20px; font-size: 1.2rem; color: #d9534f; height: 30px; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>Puzzle 2.0: Author Match</h1>
+        
+        <div class="stats">
+            <div>Timer: <span id="timer">02:00</span></div>
+            <div>Score: <span id="score">0</span></div>
+            <div>Chances Left: <span id="chances">5</span></div>
+        </div>
+
+        <div id="computer-card">Loading...</div>
+        <div id="message"></div>
+        <div id="player-grid"></div>
+    </div>
+
+    <script>
+        // Game Data
+        const data = [
+            { book: "Godan", author: "Munshi Premchand" },
+            { book: "Train to Pakistan", author: "Khushwant Singh" },
+            { book: "The Guide", author: "R.K. Narayan" },
+            { book: "Discovery of India", author: "Jawaharlal Nehru" },
+            { book: "Wings of Fire", author: "A.P.J. Abdul Kalam" },
+            { book: "Gitanjali", author: "Rabindranath Tagore" },
+            { book: "Harry Potter", author: "J.K. Rowling" },
+            { book: "The Alchemist", author: "Paulo Coelho" },
+            { book: "Hamlet", author: "William Shakespeare" },
+            { book: "War and Peace", author: "Leo Tolstoy" }
+        ];
+
+        let score = 0;
+        let chances = 5;
+        let timeLeft = 120;
+        let currentMatch = null;
+        let isProcessing = false;
+
+        const compCardDisplay = document.getElementById('computer-card');
+        const grid = document.getElementById('player-grid');
+        const scoreDisplay = document.getElementById('score');
+        const chanceDisplay = document.getElementById('chances');
+        const timerDisplay = document.getElementById('timer');
+        const messageDisplay = document.getElementById('message');
+
+        // Game Init
+        function initGame() {
+            // Shuffle and pick a book
+            currentMatch = data[Math.floor(Math.random() * data.length)];
+            compCardDisplay.innerText = "Book: " + currentMatch.book;
+
+            // Shuffle authors for the grid
+            const shuffledAuthors = [...data].sort(() => 0.5 - Math.random());
+            grid.innerHTML = '';
+            shuffledAuthors.forEach(item => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.innerText = item.author;
+                card.onclick = () => checkMatch(card, item.author);
+                grid.appendChild(card);
+            });
+
+            startTimer();
+        }
+
+        function startTimer() {
+            const timerInterval = setInterval(() => {
+                if(timeLeft <= 0 || chances <= 0) {
+                    clearInterval(timerInterval);
+                    endGame(timeLeft <= 0 ? "Time's Up!" : "No More Chances!");
+                } else {
+                    timeLeft--;
+                    let mins = Math.floor(timeLeft / 60);
+                    let secs = timeLeft % 60;
+                    timerDisplay.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                }
+            }, 1000);
+        }
+
+        function checkMatch(cardElement, authorName) {
+            if (isProcessing || cardElement.classList.contains('open')) return;
+
+            cardElement.classList.add('open');
+
+            if (authorName === currentMatch.author) {
+                messageDisplay.innerText = "Correct! Moving to next...";
+                messageDisplay.style.color = "green";
+                score++;
+                scoreDisplay.innerText = score;
+                isProcessing = true;
+                
+                setTimeout(() => {
+                    cardElement.classList.add('matched');
+                    nextRound();
+                    isProcessing = false;
+                }, 1000);
+            } else {
+                chances--;
+                chanceDisplay.innerText = chances;
+                messageDisplay.innerText = "Wrong Author! Try again.";
+                messageDisplay.style.color = "red";
+                
+                setTimeout(() => {
+                    cardElement.classList.remove('open');
+                }, 800);
+            }
+        }
+
+        function nextRound() {
+            if (score === data.length) {
+                endGame("Congratulations! You found everyone!");
+                return;
+            }
+            messageDisplay.innerText = "";
+            currentMatch = data[Math.floor(Math.random() * data.length)];
+            compCardDisplay.innerText = "Book: " + currentMatch.book;
+            // Reset cards that were opened but not matched
+            document.querySelectorAll('.card:not(.matched)').forEach(c => c.classList.remove('open'));
+        }
+
+        function endGame(msg) {
+            alert(msg + "\nFinal Score: " + score);
+            location.reload();
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
